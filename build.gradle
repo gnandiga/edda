@@ -3,8 +3,18 @@ ext.githubProjectName = name
 group = "com.netflix.${githubProjectName}"
 
 buildscript {
-    repositories { mavenCentral() }
+    repositories { 
+           mavenCentral() 
+	   add(new org.apache.ivy.plugins.resolver.URLResolver()) {
+	   name = 'GitHub'
+           addArtifactPattern 'http://cloud.github.com/downloads/[organisation]/[module]/[module]-[revision].[ext]'
+       }
+    }
     apply from: file('gradle/buildscript.gradle'), to: buildscript 
+
+    dependencies {
+        classpath 'bmuschko:gradle-tomcat-plugin:0.9.5'
+    }
 }
 
 allprojects {
@@ -21,13 +31,14 @@ apply plugin: 'war'
 apply plugin: 'jetty'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
+apply plugin: 'tomcat'
 
 dependencies {
     compile 'javax.ws.rs:jsr311-api:1.1.1'
     compile 'com.sun.jersey:jersey-core:1.11'
     compile 'com.sun.jersey:jersey-server:1.11'
     compile 'com.sun.jersey:jersey-servlet:1.11'
-    compile 'org.slf4j:slf4j-api:1.6.4'
+    //compile 'org.slf4j:slf4j-api:1.6.4'
     compile('com.amazonaws:aws-java-sdk:1.3.11') {
         exclude group:'org.codehaus.jackson'
     }
@@ -46,7 +57,7 @@ dependencies {
     testCompile 'org.mockito:mockito-core:1.8.5'
     testCompile 'org.scalatest:scalatest_2.9.1:1.8'
 
-    runtime 'org.slf4j:slf4j-log4j12:1.6.1'
+    //runtime 'org.slf4j:slf4j-log4j12:1.6.1'
     // needed for findbug Missing Class: org.slf4j.impl.StaticLoggerBinder
     providedCompile 'org.slf4j:slf4j-log4j12:1.6.1'
 
@@ -58,6 +69,19 @@ dependencies {
 
     // Libraries needed for scala api
     compile 'org.scala-lang:scala-library:2.9.1'
+
+    def tomcatVersion = '7.0.34'
+    tomcat "org.apache.tomcat.embed:tomcat-embed-core:${tomcatVersion}",
+           "org.apache.tomcat.embed:tomcat-embed-logging-juli:${tomcatVersion}"
+    tomcat("org.apache.tomcat.embed:tomcat-embed-jasper:${tomcatVersion}") {
+        exclude group: 'org.eclipse.jdt.core.compiler', module: 'ecj'
+    }
+}
+
+tomcatRun {
+    httpPort = 9090
+    httpsPort = 9091
+    enableSSL = false
 }
 
 test << {
